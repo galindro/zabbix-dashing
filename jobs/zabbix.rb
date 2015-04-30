@@ -1,0 +1,122 @@
+require "zabbixapi"
+require "json"
+
+# :first_in sets how long it takes before the job is first run. In this case, it is run immediately
+SCHEDULER.every '1m', :first_in => 0 do |job|
+	
+	config_file = File.read(Dir.pwd + '/jobs/zabbix-monitor-config.json')
+	config_parsed = JSON.parse(config_file)
+
+	#Your template names
+	templates = config_parsed['Zabbix']['templates']
+
+	#Your auth token
+	auth_token = config_parsed['auth_token']
+
+	#Your Zabbix API configuration
+	zbx = ZabbixApi.connect(
+		:url => config_parsed['Zabbix']['api_config']['url'],
+		:user => config_parsed['Zabbix']['api_config']['user'],
+		:password => config_parsed['Zabbix']['api_config']['password']
+	)
+
+	zbx_priorities = {
+		0 => "ok",
+		1 => "nothing",
+		2 => "warning",
+		3 => "average",
+		4 => "high",
+		5 => "disaster"
+	}
+
+	templateids = []
+	application_names = []
+
+	#Get template ids
+	template_ids = zbx.query(
+		:method => "template.get",
+		:params => {
+		    :filter => {
+		    	:host => templates
+		    },
+			:output => [
+				"templateid"
+			]
+		}
+	)
+
+	#Gen list of template ids
+	(template_ids).each do |template|
+		templateids << template['templateid']
+	end
+
+	#Get application names from template ids
+	applications = zbx.query(
+		:method => "application.get",
+		:params => {
+			:templated => true,
+			:templateids => templateids,
+			:output => [
+				"name"
+			]
+		}
+	)
+
+	#Gen list of application names
+	(applications).each do |application|
+		application_names << application['name']
+	end
+
+	(application_names).each do |app_name|
+
+		#Get application ids inherited from templates that is equal to app_name
+		application = zbx.query(
+			:method => "application.get",
+			:params => {
+				:inherited => true,
+			    :filter => {
+			    	:name => app_name,
+			    },
+				:output => [
+					"applicationid"
+				]
+			}
+		)
+
+		#Get triggers with state problem where application ids is equal to application[0]['applicationid']
+		triggers = zbx.query(
+			:method => "trigger.get",
+			:params => {
+			    :filter => {
+			      :value => 1
+			    },
+				:applicationids => [application[0]['applicationid']],
+				:output => [
+					"description",
+					"priority"
+				]
+			}
+		)
+
+		last_priority = 0
+		priority = 0
+
+		(triggers).each do |trigger|
+
+			#Get the greater priority
+			if trigger['priority'].to_i > last_priority
+				priority = trigger['priority'].to_i
+				last_priority = priority
+			end
+
+		end
+
+		#Send event to the application widget
+		send_event(app_name, { auth_token: auth_token, status: zbx_priorities[priority] }) 	
+
+	end
+
+	#Set the array zabbix_widget_names with the application_names that will be used for generate widgets
+	set :zabbix_widget_names, application_names
+
+end

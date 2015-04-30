@@ -1,0 +1,10 @@
+<% content_for :title do %>Zabbix dashboard<% end %>
+<div class="gridster">
+	<ul>
+		<% settings.zabbix_widget_names.each do |zabbix_widget| %>
+		   <li data-row="1" data-col="1" data-sizex="1" data-sizey="1">
+		    <div data-id="<%=zabbix_widget%>" data-view="Text" data-title="<%=zabbix_widget%>" data-text="" data-moreinfo=""></div>
+		  </li>
+		<% end %>
+	</ul>
+</div>
