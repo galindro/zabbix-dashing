@@ -100,19 +100,21 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 
 		last_priority = 0
 		priority = 0
-
+		trigger_name = ""
+		
 		(triggers).each do |trigger|
 
 			#Get the greater priority
 			if trigger['priority'].to_i > last_priority
 				priority = trigger['priority'].to_i
 				last_priority = priority
+				trigger_name = trigger['description']
 			end
 
 		end
 
 		#Send event to the application widget
-		send_event(app_name, { auth_token: auth_token, status: zbx_priorities[priority] }) 	
+		send_event(app_name, { auth_token: auth_token, status: zbx_priorities[priority], text: trigger_name })
 
 	end
 
