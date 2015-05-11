@@ -151,6 +151,9 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 						:sortfield => "clock",
 						:sortorder => "DESC",
 						:limit => 1,
+						:filter => {
+							:acknowledged => 1
+						},
 						:output => [
 							"eventid"
 						]
