@@ -148,7 +148,9 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 					:method => "event.get",
 					:params => {
 						:objectids => trigger_id,
-						:acknowledged => true,
+						:sortfield => "clock",
+						:sortorder => "DESC",
+						:limit => 1,
 						:output => [
 							"eventid"
 						]

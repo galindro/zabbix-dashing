@@ -1,6 +1,4 @@
 *DS_STORE
 history.yml
 jobs/a.rb
-jobs/zabbix-monitor-config.json
-logs/*
-config.ru
+logs/
