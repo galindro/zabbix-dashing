@@ -9,6 +9,7 @@ $background-color: #222;
 $text-color: #fff;
 
 $background-zabbix-ok: #0abf0d;
+$background-zabbix-acknowledged: #0000ff;
 $background-zabbix-warning: #b8b346;
 $background-zabbix-average: #ff6700;
 $background-zabbix-high: #f04b4b;
@@ -162,6 +163,14 @@ h3 {
 
 .widget.zabbix-ok {
   background-color: $background-zabbix-ok;
+
+  .title, .more-info {
+    color: $text-warning-color;
+  }
+}
+
+.widget.zabbix-acknowledged {
+  background-color: $background-zabbix-acknowledged;
 
   .title, .more-info {
     color: $text-warning-color;

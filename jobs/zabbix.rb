@@ -26,7 +26,8 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 		2 => "warning",
 		3 => "average",
 		4 => "high",
-		5 => "disaster"
+		5 => "disaster",
+		10 => "acknowledged"
 	}
 
 	templateids = []
@@ -36,9 +37,9 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 	template_ids = zbx.query(
 		:method => "template.get",
 		:params => {
-		    :filter => {
-		    	:host => templates
-		    },
+			:filter => {
+				:host => templates
+			},
 			:output => [
 				"templateid"
 			]
@@ -69,14 +70,22 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 
 	(application_names).each do |app_name|
 
+		triggers = []
+		items = []
+		events = []
+		last_priority = 0
+		priority = 0
+		trigger_name = ""
+		trigger_id = ""
+
 		#Get application ids inherited from templates that is equal to app_name
 		application = zbx.query(
 			:method => "application.get",
 			:params => {
 				:inherited => true,
-			    :filter => {
-			    	:name => app_name,
-			    },
+				:filter => {
+					:name => app_name,
+				},
 				:output => [
 					"applicationid"
 				]
@@ -87,34 +96,75 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 		triggers = zbx.query(
 			:method => "trigger.get",
 			:params => {
-			    :filter => {
-			      :value => 1
-			    },
+				:filter => {
+					:value => 1,
+					:status => 0
+				},
 				:applicationids => [application[0]['applicationid']],
 				:output => [
 					"description",
-					"priority"
+					"priority",
+					"triggerid"
 				]
 			}
 		)
 
-		last_priority = 0
-		priority = 0
-		trigger_name = ""
+		#If there are triggers
+		if triggers.any?
 		
-		(triggers).each do |trigger|
+			(triggers).each do |trigger|
 
-			#Get the greater priority
-			if trigger['priority'].to_i > last_priority
-				priority = trigger['priority'].to_i
-				last_priority = priority
-				trigger_name = trigger['description']
+				#Get the greater priority
+				if trigger['priority'].to_i > last_priority
+					priority = trigger['priority'].to_i
+					last_priority = priority
+					trigger_name = trigger['description']
+					trigger_id = trigger['triggerid']
+				end
+
 			end
 
+			# Check associated items
+			items = zbx.query(
+				:method => "item.get",
+				:params => {
+					:triggerids => trigger_id,
+					:webitems => true,
+					:filter => {
+						:status => 0
+					},
+					:output => [
+						"itemid"
+					]
+				}
+			)
+
+			# Check if the associated items are disabled
+			if not items.any?
+				priority = 0
+			else
+				#Get events from trigger with acknowledgedment = yes
+				events = zbx.query(
+					:method => "event.get",
+					:params => {
+						:objectids => trigger_id,
+						:acknowledged => true,
+						:output => [
+							"eventid"
+						]
+					}
+				)
+			end
 		end
 
-		#Send event to the application widget
-		send_event(app_name, { auth_token: auth_token, status: zbx_priorities[priority], text: trigger_name })
+		#If there are acknowledgedment
+		if events.any?
+			#Send event to the application widget with ack
+			send_event(app_name, { auth_token: auth_token, status: zbx_priorities[10], text: trigger_name })
+		else
+			#Send event to the application widget without ack
+			send_event(app_name, { auth_token: auth_token, status: zbx_priorities[priority], text: trigger_name })
+		end
 
 	end
 
