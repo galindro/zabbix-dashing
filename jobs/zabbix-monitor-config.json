@@ -1,6 +1,12 @@
 {
 	"Zabbix" : {
-		
+
+		"applications_include" : ["EMAIL","DOVECOT"],
+
+		"applications_exclude" : [ 
+			"POSTFIX"
+		],
+
 		"templates" : [
 			"Template 1",
 			"Template 2",

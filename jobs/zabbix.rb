@@ -51,22 +51,46 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 		templateids << template['templateid']
 	end
 
-	#Get application names from template ids
-	applications = zbx.query(
-		:method => "application.get",
-		:params => {
-			:templated => true,
-			:templateids => templateids,
-			:output => [
-				"name"
-			]
-		}
-	)
+	if not config_parsed['Zabbix'].has_key?('applications_include')
+		#Get application names from template ids
+		applications = zbx.query(
+			:method => "application.get",
+			:params => {
+				:templated => true,
+				:templateids => templateids,
+				:output => [
+					"name"
+				]
+			}
+		)
+	else
+		#Get application names from template ids
+		applications = zbx.query(
+			:method => "application.get",
+			:params => {
+				:templated => true,
+				:templateids => templateids,
+				:filter => {
+					:name => config_parsed['Zabbix']['applications_include'],
+				},
+				:output => [
+					"name"
+				]
+			}
+		)
+	end
 
 	#Gen list of application names
 	(applications).each do |application|
+		if config_parsed['Zabbix'].has_key?('applications_exclude')
+			if config_parsed['Zabbix']['applications_exclude'].include?(application['name'])
+				next
+			end
+		end
 		application_names << application['name']
 	end
+
+	application_names = application_names.uniq
 
 	(application_names).each do |app_name|
 
@@ -77,6 +101,7 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 		priority = 0
 		trigger_name = ""
 		trigger_id = ""
+		acks = ""
 
 		#Get application ids inherited from templates that is equal to app_name
 		application = zbx.query(
@@ -148,6 +173,7 @@ SCHEDULER.every '1m', :first_in => 0 do |job|
 					:method => "event.get",
 					:params => {
 						:objectids => trigger_id,
+						:select_acknowledges => "extend",
 						:sortfield => "clock",
 						:sortorder => "DESC",
 						:limit => 1,
