@@ -31,9 +31,15 @@ This is what Zabbix Dashing do each minute:
     * If yes:
       * For each trigger 
         * Get the greater trigger priority
-      * Send event to the application widget with the greater priority
+        * Check associated items
+        * Check if the associated items are disabled
+        * Get events from trigger with acknowledgedment = yes
+        * If there are acknowledgedment
+          * Send event to the application widget with ack (blue color)
+        * Else:
+          * Send event to the application widget without ack (one of the priorities colors, depending of the trigger severity)
     * If no:
-      * Send event to the application widget with status OK
+      * Send event to the application widget with status OK (green color)
 * Set the array zabbix_widget_names with the application names that will be used for generate widgets
 
 As you can see, for each application's trigger with status problem, the dashboard will elect the one with the greater priority. So, a disaster trigger will have priority over warning trigger. Then, if two triggers are fired up, Zabbix Dashing will change the color of the widget based on the collor of the trigger with the greater priority.
@@ -48,6 +54,7 @@ Warning: #b8b346;
 Average: #ff6700;
 High: #f04b4b;
 Disaster: #ff0000;
+Trigger acknowledged: #0000ff;
 ```
 
 ## Installation
@@ -159,7 +166,15 @@ $ vim /opt/zabbix-dashing/jobs/zabbix-monitor-config.json
 {
     
   "Zabbix" : {
-      # Put here your template names
+    # Applications to include (optional). If it isn't informed, all aplications will be get from templates
+		  "applications_include" : ["EMAIL","DOVECOT"],
+		  
+    # Applications to exclude (optional). If it isn't informed, all aplications will be considered
+		  "applications_exclude" : [ 
+			   "POSTFIX"
+ 	 	],
+ 	 	
+    # Put here your template names
     "templates" : [
       "Template 1",
       "Template 2",
