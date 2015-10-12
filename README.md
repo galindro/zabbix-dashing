@@ -2,6 +2,8 @@
 
 This is a dashboard created with [dashing](http://shopify.github.com/dashing) to show Zabbix triggers grouped by application, not by severity. It dinamically creates widgets based on templated applications and changes those colors based on fired triggers.
 
+![](https://raw.githubusercontent.com/galindro/zabbix-dashing/master/print.png)
+
 ## Zabbix Configuration
 
 **BEFORE** install this software, you will need to organize all of your Zabbix triggers and items into templates and make sure that all templeted items / web scenarios are correctly associated to templeted applications. 
