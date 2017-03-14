@@ -1,3 +1,5 @@
+# DEPRECATED: This project is deprecated. Use [Grafana-Zabbix](https://github.com/alexanderzobnin/grafana-zabbix) instead.
+
 # [Zabbix Dashing](https://github.com/galindro/zabbix-dashing)
 
 This is a dashboard created with [dashing](http://shopify.github.com/dashing) to show Zabbix triggers grouped by application, not by severity. It dinamically creates widgets based on templated applications and changes those colors based on fired triggers.
